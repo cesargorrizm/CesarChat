@@ -1,14 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:proyectoappcesar/widgets/blue_button.dart';
 import 'package:proyectoappcesar/widgets/custom_input.dart';
 import 'package:proyectoappcesar/widgets/label.dart';
 import 'package:proyectoappcesar/widgets/logo_app.dart';
+
+import '../helpers/mostrar_alerta.dart';
+import '../services/auth_service.dart';
 
 
 class RegisterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Color(0xffF2F2F2),
       body: SafeArea(
@@ -49,6 +56,7 @@ class __FormStateState extends State<_FormState> {
   final nombreCtrl = TextEditingController();
   @override
   Widget build(BuildContext context) {
+     final autService = Provider.of<AuthService>(context, listen: false);
     return Container(
             padding: EdgeInsets.symmetric(horizontal: 50),
             margin: EdgeInsets.only(top: 10),
@@ -77,9 +85,19 @@ class __FormStateState extends State<_FormState> {
             ispassword: true,
             ),
           //crear un boton
-           BlueButton(text: 'Ingrese', onPressed: (){
-             
-           })
+           BlueButton(text: 'Crear cuenta', onPressed:autService.autenticando
+                  ? null
+                  : ()async {
+                      FocusScope.of(context).unfocus();
+                     final loginOK =
+                    await autService.register(emailCtrl.text.trim(), passCtrl.text.trim(),nombreCtrl.text.trim());
+                      if (loginOK == true) {
+                        //todo conectar a nuestro socket server
+                        Navigator.pushReplacementNamed(context, 'usuarios'); 
+                      }else{
+                         mostrarAlerta(context, 'Registro incorrecto ', loginOK);
+                      }
+                    })
         ],
       ),
     );
