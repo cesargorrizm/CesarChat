@@ -9,6 +9,7 @@ import 'package:proyectoappcesar/widgets/logo_app.dart';
 
 import '../helpers/mostrar_alerta.dart';
 import '../services/auth_service.dart';
+import '../services/socket_service.dart';
 
 
 class RegisterScreen extends StatelessWidget {
@@ -57,6 +58,7 @@ class __FormStateState extends State<_FormState> {
   @override
   Widget build(BuildContext context) {
      final autService = Provider.of<AuthService>(context, listen: false);
+     final socketService = Provider.of<SocketService>(context );
     return Container(
             padding: EdgeInsets.symmetric(horizontal: 50),
             margin: EdgeInsets.only(top: 10),
@@ -92,7 +94,7 @@ class __FormStateState extends State<_FormState> {
                      final loginOK =
                     await autService.register(emailCtrl.text.trim(), passCtrl.text.trim(),nombreCtrl.text.trim());
                       if (loginOK == true) {
-                        //todo conectar a nuestro socket server
+                       socketService.connect();
                         Navigator.pushReplacementNamed(context, 'usuarios'); 
                       }else{
                          mostrarAlerta(context, 'Registro incorrecto ', loginOK);

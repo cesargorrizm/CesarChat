@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectoappcesar/models/usuario.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
+import 'package:proyectoappcesar/services/chat_service.dart';
+import 'package:proyectoappcesar/services/usuarios_service.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+
+import '../services/socket_service.dart';
 
 
 class UsuariosScreen extends StatefulWidget {
@@ -14,29 +18,24 @@ class UsuariosScreen extends StatefulWidget {
 }
 
 class _UsuariosScreenState extends State<UsuariosScreen> {
-  final usuarios = [
-    Usuario(
-      online: true,
-      email: 'test1@email.com',
-      nombre: 'Maria',
-      uid: '1'),
-    Usuario(
-      online: true,
-      email: 'test2@email.com',
-      nombre: 'Jesus',
-      uid: '2'),
-    Usuario(
-      online: false,
-      email: 'test2@email.com',
-      nombre: 'Cesar',
-      uid: '3'),
-  ];
+
+   List<Usuario> usuarios = [];
   //Refresh controller
   RefreshController _refreshController = RefreshController(initialRefresh: false);
+  final usuarioService = UsuariosService();
+
+
+  @override
+  void initState() {
+    _cargarUsuarios();
+    super.initState();
+  }
+
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
+    final socketService = Provider.of<SocketService>(context );
     return Scaffold(
       appBar: AppBar(
         title: Text(authService.usuario.nombre,style: TextStyle(color: Colors.blue),),
@@ -45,7 +44,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
         leading: IconButton(
           icon: Icon(Icons.exit_to_app, color: Colors.blue,),
           onPressed: (){
-            //Todo desconecttarnos socket server
+            socketService.disconnect();
             Navigator.pushReplacementNamed(context, 'login');
             AuthService.delete();
 
@@ -54,8 +53,9 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
         actions: <Widget>[
           Container(
             margin: EdgeInsets.only(right: 10),
-            // child:Icon(Icons.check_circle, color: Colors.blue,) ,
-            child:Icon(Icons.offline_bolt, color: Colors.red,) ,
+            child:( socketService.serverStatus ==ServerStatus.Online)
+            ?Icon(Icons.check_circle, color: Colors.blue,) :
+            Icon(Icons.offline_bolt, color: Colors.red,) ,
           )
         ],
       ),
@@ -94,11 +94,22 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
             borderRadius: BorderRadius.circular(100)
           ),
         ),
+        onTap: (){
+          final chatService = Provider.of<ChatService>(context, listen: false);
+          chatService.usuarioPara = usuario;
+          Navigator.pushReplacementNamed(context,'chat');
+          
+        },
       );
   }
    _cargarUsuarios()async{
 
-     await Future.delayed(Duration(milliseconds: 1000));
+     
+    usuarios =await usuarioService.getUsuarios();
+    //  await Future.delayed(Duration(milliseconds: 1000));
+    setState(() {
+      
+    });
      _refreshController.refreshCompleted();
      
    }

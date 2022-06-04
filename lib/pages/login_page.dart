@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectoappcesar/helpers/mostrar_alerta.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
+import 'package:proyectoappcesar/services/socket_service.dart';
 import 'package:proyectoappcesar/widgets/blue_button.dart';
 import 'package:proyectoappcesar/widgets/custom_input.dart';
 import 'package:proyectoappcesar/widgets/label.dart';
@@ -53,7 +54,8 @@ class __FormStateState extends State<_FormState> {
   final passCtrl = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    final autService = Provider.of<AuthService>(context, listen: false);
+    final autService = Provider.of<AuthService>(context);
+    final socketService = Provider.of<SocketService>(context );
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 50),
       margin: EdgeInsets.only(top: 10),
@@ -83,7 +85,7 @@ class __FormStateState extends State<_FormState> {
                      final loginOK =
                     await autService.login(emailCtrl.text.trim(), passCtrl.text.trim());
                       if (loginOK) {
-                        //todo conectar a nuestro socket server
+                        socketService.connect();
                         Navigator.pushReplacementNamed(context, 'usuarios'); 
                       }else{
                          mostrarAlerta(context, 'Login incorrecto ', 'Revise sus credenciales nuevamente');
