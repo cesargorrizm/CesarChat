@@ -17,7 +17,7 @@ class MensajesResponse {
     bool ok;
     List<Mensaje> mensajes;
 
-    factory MensajesResponse.fromJson(Map<String, dynamic> json) => MensajesResponse(
+    factory MensajesResponse.fromJson(Map<String?, dynamic?> json) => MensajesResponse(
         ok: json["ok"],
         mensajes: List<Mensaje>.from(json["mensajes"].map((x) => Mensaje.fromJson(x))),
     );

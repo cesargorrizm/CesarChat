@@ -1,14 +1,18 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:proyectoappcesar/global/enviroments.dart';
 import 'package:proyectoappcesar/models/mensajes_response.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
 import 'package:proyectoappcesar/services/socket_service.dart';
 import 'package:proyectoappcesar/widgets/chat_message.dart';
-
+import 'package:http/http.dart' as http;
+import '../Utils/toast.dart';
 import '../services/chat_service.dart';
+import 'meeting_page.dart';
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -19,6 +23,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final _textController = TextEditingController();
   final _focusNode = new FocusNode();
   bool _estaEscribiendo = false;
+  String _token = "";
+  String _meetingID = "";
 
   late ChatService chatService;
   late SocketService socketService;
@@ -28,48 +34,77 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    chatService =  Provider.of<ChatService>(context, listen: false);
-    socketService =  Provider.of<SocketService>(context, listen: false);
-    authService =  Provider.of<AuthService>(context, listen: false);
+    chatService = Provider.of<ChatService>(context, listen: false);
+    socketService = Provider.of<SocketService>(context, listen: false);
+    authService = Provider.of<AuthService>(context, listen: false);
     socketService.socket.on('mensaje-personal', _escucharMensaje);
+    _token = Enviroments.AUTH_TOKEN;
     _cargarMensajes(chatService.usuarioPara.uid);
   }
-  void _escucharMensaje(dynamic data){
+
+  void _escucharMensaje(dynamic data) {
     ChatMessage message = ChatMessage(
-      texto: data['mensaje'], 
-      uid: data['de'],
-      animationController: AnimationController(vsync: this,duration:Duration(milliseconds: 300) ));
-      setState(() {
-        _messages.insert(0, message);
-      });
-      message.animationController.forward();
+        texto: data['mensaje'],
+        uid: data['de'],
+        animationController: AnimationController(
+            vsync: this, duration: Duration(milliseconds: 300)));
+    setState(() {
+      _messages.insert(0, message);
+    });
+    message.animationController.forward();
   }
 
   @override
   Widget build(BuildContext context) {
-
     final usuarioPara = chatService.usuarioPara;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: Center(
-          child: Column(
-            children:  <Widget>[
-              CircleAvatar(
-                child: Text(
-                  usuarioPara.nombre.substring(0,2),
-                  style: TextStyle(fontSize: 12),
-                ),
-                backgroundColor: Colors.blue,
-                maxRadius: 14,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                color: Colors.blue,
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context,'usuarios');
+                  },
+                  icon: Icon(Icons.arrow_back)),
+              Column(
+                children: <Widget>[
+                  CircleAvatar(
+                    child: Text(
+                      usuarioPara.nombre.substring(0, 2),
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: Colors.blue,
+                    maxRadius: 14,
+                  ),
+                  SizedBox(
+                    height: 3,
+                  ),
+                  Text(
+                    usuarioPara.nombre,
+                    style: TextStyle(color: Colors.blue, fontSize: 12),
+                  ),
+                ],
               ),
-              SizedBox(
-                height: 3,
-              ),
-              Text(
-               usuarioPara.nombre,
-                style: TextStyle(color: Colors.blue, fontSize: 12),
-              )
+              IconButton(
+                color: Colors.blue,
+                onPressed: () async{
+                      _meetingID = await createMeeting();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MeetingScreen(
+                            token: _token,
+                            meetingId: _meetingID,
+                            displayName: authService.usuario.nombre,
+                          ),
+                        ),
+                      );
+                    },
+               icon: Icon(Icons.video_call)),
             ],
           ),
         ),
@@ -161,7 +196,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _focusNode.requestFocus();
       final newMessage = ChatMessage(
         texto: texto,
-        uid: authService.usuario.uid ,
+        uid: authService.usuario.uid,
         animationController: AnimationController(
           vsync: this,
           duration: Duration(milliseconds: 800),
@@ -172,32 +207,51 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _estaEscribiendo = false;
       });
-      socketService.emit('mensaje-personal',{
-        'de':authService.usuario.uid,
-        'para':chatService.usuarioPara.uid,
-        'mensaje':texto
+      socketService.emit('mensaje-personal', {
+        'de': authService.usuario.uid,
+        'para': chatService.usuarioPara.uid,
+        'mensaje': texto
       });
     }
   }
+
   @override
   void dispose() {
     //Todo Off del socket
 
-    for(ChatMessage message in _messages){
+    for (ChatMessage message in _messages) {
       message.animationController.dispose();
     }
     super.dispose();
   }
 
-  void _cargarMensajes(String uid)async {
-    List<Mensaje>chat = await chatService.getChat(uid);
+  void _cargarMensajes(String uid) async {
+    List<Mensaje> chat = await chatService.getChat(uid);
     final history = chat.map((e) => ChatMessage(
-      texto: e.mensaje,
-       uid: e.de,
-      animationController:  AnimationController(vsync: this,duration:Duration(milliseconds: 0) )..forward()));
+        texto: e.mensaje,
+        uid: e.de,
+        animationController: AnimationController(
+            vsync: this, duration: Duration(milliseconds: 0))
+          ..forward()));
 
-      setState(() {
-        _messages.insertAll(0, history);
-      });
+    setState(() {
+      _messages.insertAll(0, history);
+    });
+  }
+ 
+ Future<String> createMeeting() async {
+    final String? _VIDEOSDK_API_ENDPOINT =Enviroments.VIDEOSDK_API;
+
+    final Uri getMeetingIdUrl = Uri.parse('$_VIDEOSDK_API_ENDPOINT/meetings');
+    final http.Response meetingIdResponse =
+        await http.post(getMeetingIdUrl, headers: {
+      "Authorization": _token,
+    });
+
+    final meetingId = json.decode(meetingIdResponse.body)['meetingId'];
+
+    print("Meeting ID: $meetingId");
+
+    return meetingId;
   }
 }
