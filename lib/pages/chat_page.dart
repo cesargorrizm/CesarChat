@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectoappcesar/global/enviroments.dart';
 import 'package:proyectoappcesar/models/mensajes_response.dart';
+import 'package:proyectoappcesar/models/notificacionLlamada.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
 import 'package:proyectoappcesar/services/socket_service.dart';
 import 'package:proyectoappcesar/widgets/chat_message.dart';
@@ -53,6 +54,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
     message.animationController.forward();
   }
+  void _ecucharNotificacion(dynamic data){
+    NotificacionLlamada notificacion = NotificacionLlamada(
+      desde: data['desde'],
+      para: data['para'],
+      codigoLlamada: data['codigollamada']);
+      setState(() {
+        
+      });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +103,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 color: Colors.blue,
                 onPressed: () async{
                       _meetingID = await createMeeting();
+                      _envioVideollamada(_meetingID);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -212,6 +223,23 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         'para': chatService.usuarioPara.uid,
         'mensaje': texto
       });
+    }
+  }
+
+  _envioVideollamada(String codigoID){
+    if (codigoID.length!=0) {
+      final NotificacionLlamada notificacionLlamada = NotificacionLlamada(
+        desde: authService.usuario.nombre,
+        para: chatService.usuarioPara.uid,
+        codigoLlamada: codigoID);
+
+      socketService.emit('videollamada-personal',{
+        'desde':notificacionLlamada.desde,
+        'para':notificacionLlamada.para,
+        'codigollamada':notificacionLlamada.codigoLlamada
+      
+      });
+      
     }
   }
 

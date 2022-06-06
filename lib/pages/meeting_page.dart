@@ -98,7 +98,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
               //terminate after 10 minutes
               Future.delayed(const Duration(minutes: 10), () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Demo app limits meeting to 10 Minutes'))
+                    const SnackBar(content: Text('Tiempo limite 10 minutos'))
                 );
                 _meeting.leave();
               });

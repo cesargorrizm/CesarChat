@@ -14,6 +14,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:http/http.dart' as http;
 
 import '../Utils/toast.dart';
+import '../models/notificacionLlamada.dart';
 import '../services/socket_service.dart';
 
 class UsuariosScreen extends StatefulWidget {
@@ -27,13 +28,24 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
   final usuarioService = UsuariosService();
+  late SocketService socketService;
 
   @override
   void initState() {
+    socketService = Provider.of<SocketService>(context, listen: false);
     _cargarUsuarios();
+    socketService.socket.on('videollamada-personal', _ecucharNotificacion);
     super.initState();
   }
-
+  
+  void _ecucharNotificacion(dynamic data){
+    NotificacionLlamada notificacion = NotificacionLlamada(
+      desde: data['desde'],
+      para: data['para'],
+      codigoLlamada: data['codigollamada']);
+    
+      notificacionVideollamada(notificacion); 
+  }
   @override
   Widget build( context) {
     final authService = Provider.of<AuthService>(context);
@@ -212,5 +224,71 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
 
     return validateMeetingResponse.statusCode == 200;
   }
+Future notificacionVideollamada(NotificacionLlamada notificacionLlamada) async {
+
+    final authService = Provider.of<AuthService>(context,listen: false);
+    final nombre = notificacionLlamada.desde;
+    if (Platform.isAndroid) {
+      return showDialog(
+          context: context,
+          builder: (_) {
+            return AlertDialog(
+              title: Text(' Te ha invitado a una videoLLamada $nombre'),
+
+              actions: <Widget>[
+                MaterialButton(
+                  child: Text('Unisirse'),
+                  elevation: 5,
+                  textColor: Colors.blue,
+                  onPressed: () async {
+    
+                      if (await validateMeeting(notificacionLlamada.codigoLlamada)) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MeetingScreen(
+                              meetingId: notificacionLlamada.codigoLlamada,
+                              token: Enviroments.AUTH_TOKEN,
+                              displayName: authService.usuario.nombre,
+                            ),
+                          ),
+                        );
+                      } else {
+                        toastMsg("Codigo invalido de sala");
+                      }
+                    },
+                  
+                ),
+                MaterialButton(
+                  child: Text('Cancelar'),
+                  elevation: 5,
+                  textColor: Colors.blue,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            );
+          });
+    }
+      return showCupertinoDialog(
+          context: context,
+          builder: (_) {
+            return CupertinoAlertDialog(
+              title: Text(' Te ha invitado a una videoLLamada $nombre'),
+              
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  child: Text('Unirse'),
+                  isDefaultAction: true,
+                  onPressed: null,
+                ),
+                CupertinoDialogAction(
+                  child: Text('Cancelar'),
+                  isDefaultAction: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            );
+          });
+    }
   }
 
