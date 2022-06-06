@@ -20,10 +20,10 @@ class LoginScreen extends StatelessWidget {
               height: MediaQuery.of(context).size.height * 0.9,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
+               children: <Widget>[
                   //logo de la aplicación
                   const Logo(
-                    titulo: 'Messengers',
+                    titulo: 'Logueo',
                   ),
                   _FormState(),
                   const LabelLogin(

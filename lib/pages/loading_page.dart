@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,22 +8,34 @@ import '../services/socket_service.dart';
 
 
 
-class LoadingScreen extends StatelessWidget {
+class LoadingScreen extends StatefulWidget {
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: FutureBuilder(
-        future: checkLoginState(context),
-        builder: (context, snapshot) {
+  State<LoadingScreen> createState() => _LoadingScreenState();
+}
 
-          return  Center(
-          child: Text('UsuariosScreen'),
-           );
-        },
-       
+class _LoadingScreenState extends State<LoadingScreen> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    Timer(const Duration(seconds: 4), () {
+      checkLoginState(context);
+    });
+    super.initState();
+  }
+  @override
+  Widget build(BuildContext context) {
+     return Scaffold(
+       backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Center(
+            child: Image.asset('assets/logo.png'),
+          ),
+          
+        ],
       ),
-   );
+    );
   }
 }
 Future checkLoginState(BuildContext context)async{
