@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:proyectoappcesar/global/enviroments.dart';
 import 'package:proyectoappcesar/models/usuario.dart';
 import 'package:proyectoappcesar/pages/meeting_page.dart';
+import 'package:proyectoappcesar/search/search_delegate.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
 import 'package:proyectoappcesar/services/chat_service.dart';
 import 'package:proyectoappcesar/services/usuarios_service.dart';
@@ -25,8 +26,7 @@ class UsuariosScreen extends StatefulWidget {
 class _UsuariosScreenState extends State<UsuariosScreen> {
   List<Usuario> usuarios = [];
   //Refresh controller
-  RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  RefreshController _refreshController =RefreshController(initialRefresh: false);
   final usuarioService = UsuariosService();
   late SocketService socketService;
 
@@ -37,17 +37,18 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     socketService.socket.on('videollamada-personal', _ecucharNotificacion);
     super.initState();
   }
-  
-  void _ecucharNotificacion(dynamic data){
+
+  void _ecucharNotificacion(dynamic data) {
     NotificacionLlamada notificacion = NotificacionLlamada(
-      desde: data['desde'],
-      para: data['para'],
-      codigoLlamada: data['codigollamada']);
-    
-      notificacionVideollamada(notificacion); 
+        desde: data['desde'],
+        para: data['para'],
+        codigoLlamada: data['codigollamada']);
+
+    notificacionVideollamada(notificacion);
   }
+
   @override
-  Widget build( context) {
+  Widget build(context) {
     final authService = Provider.of<AuthService>(context);
     final socketService = Provider.of<SocketService>(context);
     return Scaffold(
@@ -59,7 +60,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
         elevation: 1,
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon:const Icon(
+          icon: const Icon(
             Icons.exit_to_app,
             color: Colors.blue,
           ),
@@ -70,17 +71,28 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
           },
         ),
         actions: <Widget>[
-          Container(
-            margin: EdgeInsets.only(right: 10),
-            child: (socketService.serverStatus == ServerStatus.Online)
-                ? Icon(
-                    Icons.check_circle,
-                    color: Colors.blue,
-                  )
-                : Icon(
-                    Icons.offline_bolt,
-                    color: Colors.red,
-                  ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.search,
+                  color: Colors.blue,
+                ),
+                onPressed: ()=> showSearch(context: context, delegate: UserSearchDelegate()),
+              ),
+              Container(
+                margin: EdgeInsets.only(right: 10),
+                child: (socketService.serverStatus == ServerStatus.Online)
+                    ?const Icon(
+                        Icons.check_circle,
+                        color: Colors.blue,
+                      )
+                    :const Icon(
+                        Icons.offline_bolt,
+                        color: Colors.red,
+                      ),
+              ),
+            ],
           )
         ],
       ),
@@ -96,7 +108,9 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         elevation: 1,
-        onPressed:()async{ unirseLLAmanda();},
+        onPressed: () async {
+          unirseLLAmanda();
+        },
       ),
     );
   }
@@ -142,7 +156,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
 
   Future unirseLLAmanda() async {
     final textController = new TextEditingController();
-    final authService = Provider.of<AuthService>(context,listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
     if (Platform.isAndroid) {
       return showDialog(
           context: context,
@@ -158,26 +172,25 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                   elevation: 5,
                   textColor: Colors.blue,
                   onPressed: () async {
-                      if (textController.text.length<=0) {
-                        toastMsg("Introduce el codigo");
-                        return;
-                      }
-                      if (await validateMeeting(textController.text)) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MeetingScreen(
-                              meetingId: textController.text,
-                              token: Enviroments.AUTH_TOKEN,
-                              displayName: authService.usuario.nombre,
-                            ),
+                    if (textController.text.length <= 0) {
+                      toastMsg("Introduce el codigo");
+                      return;
+                    }
+                    if (await validateMeeting(textController.text)) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MeetingScreen(
+                            meetingId: textController.text,
+                            token: Enviroments.AUTH_TOKEN,
+                            displayName: authService.usuario.nombre,
                           ),
-                        );
-                      } else {
-                        toastMsg("Codigo invalido de sala");
-                      }
-                    },
-                  
+                        ),
+                      );
+                    } else {
+                      toastMsg("Codigo invalido de sala");
+                    }
+                  },
                 ),
                 MaterialButton(
                   child: Text('Cancelar'),
@@ -189,30 +202,31 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
             );
           });
     }
-      return showCupertinoDialog(
-          context: context,
-          builder: (_) {
-            return CupertinoAlertDialog(
-              title: Text('Codigo de la sala'),
-              content: CupertinoTextField(
-                controller: textController,
+    return showCupertinoDialog(
+        context: context,
+        builder: (_) {
+          return CupertinoAlertDialog(
+            title: Text('Codigo de la sala'),
+            content: CupertinoTextField(
+              controller: textController,
+            ),
+            actions: <Widget>[
+              CupertinoDialogAction(
+                child: Text('Unirse'),
+                isDefaultAction: true,
+                onPressed: null,
               ),
-              actions: <Widget>[
-                CupertinoDialogAction(
-                  child: Text('Unirse'),
-                  isDefaultAction: true,
-                  onPressed: null,
-                ),
-                CupertinoDialogAction(
-                  child: Text('Cancelar'),
-                  isDefaultAction: true,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            );
-          });
-    }
-     Future<bool> validateMeeting(String _meetingId) async {
+              CupertinoDialogAction(
+                child: Text('Cancelar'),
+                isDefaultAction: true,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        });
+  }
+
+  Future<bool> validateMeeting(String _meetingId) async {
     final String? _VIDEOSDK_API_ENDPOINT = Enviroments.VIDEOSDK_API;
 
     final Uri validateMeetingUrl =
@@ -224,9 +238,10 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
 
     return validateMeetingResponse.statusCode == 200;
   }
-Future notificacionVideollamada(NotificacionLlamada notificacionLlamada) async {
 
-    final authService = Provider.of<AuthService>(context,listen: false);
+  Future notificacionVideollamada(
+      NotificacionLlamada notificacionLlamada) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
     final nombre = notificacionLlamada.desde;
     if (Platform.isAndroid) {
       return showDialog(
@@ -234,30 +249,28 @@ Future notificacionVideollamada(NotificacionLlamada notificacionLlamada) async {
           builder: (_) {
             return AlertDialog(
               title: Text(' Te ha invitado a una videoLLamada $nombre'),
-
               actions: <Widget>[
                 MaterialButton(
                   child: Text('Unisirse'),
                   elevation: 5,
                   textColor: Colors.blue,
                   onPressed: () async {
-    
-                      if (await validateMeeting(notificacionLlamada.codigoLlamada)) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MeetingScreen(
-                              meetingId: notificacionLlamada.codigoLlamada,
-                              token: Enviroments.AUTH_TOKEN,
-                              displayName: authService.usuario.nombre,
-                            ),
+                    if (await validateMeeting(
+                        notificacionLlamada.codigoLlamada)) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MeetingScreen(
+                            meetingId: notificacionLlamada.codigoLlamada,
+                            token: Enviroments.AUTH_TOKEN,
+                            displayName: authService.usuario.nombre,
                           ),
-                        );
-                      } else {
-                        toastMsg("Codigo invalido de sala");
-                      }
-                    },
-                  
+                        ),
+                      );
+                    } else {
+                      toastMsg("Codigo invalido de sala");
+                    }
+                  },
                 ),
                 MaterialButton(
                   child: Text('Cancelar'),
@@ -269,26 +282,24 @@ Future notificacionVideollamada(NotificacionLlamada notificacionLlamada) async {
             );
           });
     }
-      return showCupertinoDialog(
-          context: context,
-          builder: (_) {
-            return CupertinoAlertDialog(
-              title: Text(' Te ha invitado a una videoLLamada $nombre'),
-              
-              actions: <Widget>[
-                CupertinoDialogAction(
-                  child: Text('Unirse'),
-                  isDefaultAction: true,
-                  onPressed: null,
-                ),
-                CupertinoDialogAction(
-                  child: Text('Cancelar'),
-                  isDefaultAction: true,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            );
-          });
-    }
+    return showCupertinoDialog(
+        context: context,
+        builder: (_) {
+          return CupertinoAlertDialog(
+            title: Text(' Te ha invitado a una videoLLamada $nombre'),
+            actions: <Widget>[
+              CupertinoDialogAction(
+                child: Text('Unirse'),
+                isDefaultAction: true,
+                onPressed: null,
+              ),
+              CupertinoDialogAction(
+                child: Text('Cancelar'),
+                isDefaultAction: true,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        });
   }
-
+}
