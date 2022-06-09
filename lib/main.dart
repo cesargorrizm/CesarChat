@@ -4,6 +4,7 @@ import 'package:proyectoappcesar/routes/routes.dart';
 import 'package:proyectoappcesar/services/auth_service.dart';
 import 'package:proyectoappcesar/services/chat_service.dart';
 import 'package:proyectoappcesar/services/socket_service.dart';
+import 'package:proyectoappcesar/services/usuarios_service.dart';
 
 void main() => runApp(MyApp());
 
@@ -14,7 +15,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_)=> AuthService()),
         ChangeNotifierProvider(create: (_)=> SocketService()),
-        ChangeNotifierProvider(create: (_)=> ChatService())
+        ChangeNotifierProvider(create: (_)=> ChatService()),
+        ChangeNotifierProvider(create: (_)=> UsuariosService())
       ],
       child: MaterialApp(
         title: 'Chat App',
